@@ -1,0 +1,29 @@
+
+
+module type afnd = sig
+  type automate;
+  val creer_automate : int -> automate;
+  val ajout_transition : automate -> int -> char -> int -> unit
+  val determiniser : automate -> automate;
+end
+
+module afnd = struct
+  type automate ={
+  nb_etats : int;
+  transition : (int*char) List Array;
+  terminal : bool Array;
+  initial : bool Array;
+  }
+
+  let creer_automate n = {
+    nb_etats=n;
+    transition = Array.make n [];
+    terminal = Array.make n false;
+    initial = Array.make n false;
+    };; 
+
+  let ajout_transition automate depart caractere arrivee =
+    automate.transition.(depart) <- (arrivee,caractere)::(automate.transition.(depart));;  
+  
+  
+end
