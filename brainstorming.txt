@@ -1,0 +1,14 @@
+brainstorming
+
+I => interface
+
+II => creer l'automate qui reconnait les mots de l'expession
+-> recuperer input + representer une expression régulière 0k
+-> representation automates derteministe + non deterministe (ou englobe les 2) 0k
+-> automate à partir d'une expression -> Berry-Sethy
+-> automate des parties <=> determiniser l'automate // Execution en parralèlle
+
+III => reconnaitre les mots
+-> 
+
+
