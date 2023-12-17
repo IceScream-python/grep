@@ -69,7 +69,7 @@ module Afnd = struct
   let determiniser automate = 
     let dico = Hashtbl.create (automate.nb_etats) in (*dictionnaires des nouveaux états*)
     let pile = Stack.create () in  (*pile des ensembles d'états qu'il reste à trouver*)
-    let vus = ref [] in
+    let vus = ref [[0]] in
     let transitions = Hashtbl.create automate.nb_etats in (*dictionnaire des transitions des nouveaux états*)
     let cpt = ref 0 in (*compteur du nombre d'etats*)
     let liste_of_set s = Sets.fold (fun x acc -> x::acc) s [] in (*transforme un ensemble en liste*)
@@ -79,11 +79,13 @@ module Afnd = struct
       |e::_ when e=elm -> ind
       |_::q -> indice_in_liste elm q (ind+1) 
     in
+    let afficher liste = List.iter (fun x -> print_int x;print_string ";") liste;print_endline "" in (*fonction de debuggage*)
     Hashtbl.add dico !cpt (Sets.of_list (etats_initiaux automate));Stack.push !cpt pile;cpt:=!cpt+1;(*Initialisation*)
     while  not (Stack.is_empty pile) do (*tant qu'il reste des ensemble d'états à explorer*)
       let i = Stack.pop pile in 
       Hashtbl.add transitions i [];(*initialise les transitions partant de ce sommet*)
       let ensemble = liste_of_set (Hashtbl.find dico i) in (*ensemble des sommets composant l'etat*)
+      print_int i;print_string " : ";afficher ensemble;
       let dic_liste = List.map (from_etat automate) ensemble in (*liste des dictionnaire des sommets accessible depuis un sommet de l'etat*)
       let accessible = Hashtbl.create (automate.nb_etats) in (*dictionnaire qui a un char associe l'ensemble des sommets accessibles*)
       List.iter (fun x -> 
@@ -95,7 +97,7 @@ module Afnd = struct
         let liste_v = liste_of_set v in
         let ind = indice_in_liste liste_v !vus 0 in 
         if ind = -1 then ( (*Si l'ensemble de sommet n'a pas encore été vu*)
-          vus := liste_v::!vus; (*on marque l'ensemble de somets comme vu*)
+          vus := !vus@[liste_v]; (*on marque l'ensemble de somets comme vu*)
           Hashtbl.add dico !cpt v; (*crée un nouveau sommet*)
           Hashtbl.add transitions i ((c,!cpt)::(Hashtbl.find transitions i)); (*crée une transition vers ce sommet*)
           Stack.push !cpt pile; (*ajoute ce sommet dans la pile de la boucle*)
@@ -105,13 +107,13 @@ module Afnd = struct
     let size = Hashtbl.length dico in
     let initial = Array.make size false in
     initial.(0) <- true;
-    let transition_auto = Array.init size (fun i -> Hashtbl.find transitions i) in
+    let transition_automate = Array.init size (fun i -> Hashtbl.find transitions i) in
     let finaux = Array.init size (fun i -> 
                                     let value = ref false in (*la valeur que va prendre la case du tableau*)
                                     let ens = Hashtbl.find dico i in (*l'ensemble des sommets correspondant à cet indice*)
                                     Sets.iter (fun x -> value:=(est_terminal automate x)||(!value)) ens;(*on vérifie si un des états est terminal*)
                                     !value) in
-    creer_automate size transition_auto initial finaux true;;(*on renvoie l'automate deterministe*)
+    creer_automate size transition_automate initial finaux true;;(*on renvoie l'automate deterministe*)
 
   let est_reconnu_deterministe string automate =
       let initial = List.hd (etats_initiaux automate) in
