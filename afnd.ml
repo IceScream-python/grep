@@ -5,8 +5,9 @@ module type Afnd = sig
   { nb_etats : int;
     transition : (char*int) list array;
     terminal : bool array;
-    initial : bool array}
-  val creer_automate : int -> automate
+    initial : bool array;
+    deterministe : bool}
+  val creer_automate : int -> (char*int) list array -> bool array -> bool array -> automate
   val ajout_transition : automate -> int -> char -> int -> unit
   val est_terminal : automate -> int -> bool
   val est_initial : automate -> int -> bool
@@ -16,6 +17,8 @@ module type Afnd = sig
   val rendre_terminal : automate -> int -> unit
   val from_etat : automate -> int -> ((char*int) list) list 
   val determiniser : automate -> automate
+  val est_reconnu_deterministe : string -> automate -> bool
+  val afficher : automate -> unit
 end
 
 module Afnd = struct
@@ -23,14 +26,16 @@ module Afnd = struct
   nb_etats : int;
   transition : (char*int) list array;
   terminal : bool array;
-  initial : bool array
+  initial : bool array;
+  deterministe : bool
   }
 
-  let creer_automate n transition terminal initial= {
+  let creer_automate n transition initial terminal b= {
     nb_etats=n;
     transition = transition;
     terminal = terminal;
     initial = initial;
+    deterministe = b
     };; 
 
   let ajout_transition automate depart caractere arrivee =
@@ -62,13 +67,13 @@ module Afnd = struct
                                 else Hashtbl.add dic c (Sets.of_list [elm])) automate.transition.(i);dic;;
 
   let determiniser automate = 
-    let dico = Hashtbl.create (automate.nb_etats) in
+    let dico = Hashtbl.create (automate.nb_etats) in (*dictionnaires des nouveaux états*)
     let pile = Stack.create () in  (*pile des ensembles d'états qu'il reste à trouver*)
-    let vus = [] in
-    let transitions = Array.make automate.nb_etats [] in 
-    let cpt = ref 0 in (*compteur *)
+    let vus = ref [] in
+    let transitions = Hashtbl.create automate.nb_etats in (*dictionnaire des transitions des nouveaux états*)
+    let cpt = ref 0 in (*compteur du nombre d'etats*)
     let liste_of_set s = Sets.fold (fun x acc -> x::acc) s [] in (*transforme un ensemble en liste*)
-    let rec indice_in_liste elm l ind = (*recherche d'élement dans une liste + renvoie son indice si trouvé*)
+    let rec indice_in_liste elm l ind = (*recherche d'élement dans une liste + renvoie son indice si trouvé sinon -1*)
       match l with
       |[] -> -1
       |e::_ when e=elm -> ind
@@ -77,6 +82,7 @@ module Afnd = struct
     Hashtbl.add dico !cpt (Sets.of_list (etats_initiaux automate));Stack.push !cpt pile;cpt:=!cpt+1;(*Initialisation*)
     while  not (Stack.is_empty pile) do (*tant qu'il reste des ensemble d'états à explorer*)
       let i = Stack.pop pile in 
+      Hashtbl.add transitions i [];(*initialise les transitions partant de ce sommet*)
       let ensemble = liste_of_set (Hashtbl.find dico i) in (*ensemble des sommets composant l'etat*)
       let dic_liste = List.map (from_etat automate) ensemble in (*liste des dictionnaire des sommets accessible depuis un sommet de l'etat*)
       let accessible = Hashtbl.create (automate.nb_etats) in (*dictionnaire qui a un char associe l'ensemble des sommets accessibles*)
@@ -87,21 +93,41 @@ module Afnd = struct
       )  dic_liste; (*alloue tout les sommets accessibles depuis chaque transition dans la Hashtbl crée les transitions pour le sommet i*)
       Hashtbl.iter (fun c v -> 
         let liste_v = liste_of_set v in
-        let ind = indice_in_liste liste_v vus 0 in 
+        let ind = indice_in_liste liste_v !vus 0 in 
         if ind = -1 then ( (*Si l'ensemble de sommet n'a pas encore été vu*)
+          vus := liste_v::!vus; (*on marque l'ensemble de somets comme vu*)
           Hashtbl.add dico !cpt v; (*crée un nouveau sommet*)
-          transitions.(i) <- (c,!cpt)::transitions.(i); (*crée une transition vers ce sommet*)
+          Hashtbl.add transitions i ((c,!cpt)::(Hashtbl.find transitions i)); (*crée une transition vers ce sommet*)
           Stack.push !cpt pile; (*ajoute ce sommet dans la pile de la boucle*)
           cpt:=!cpt+1)
-        else transitions.(i) <- (c,ind)::transitions.(i)) accessible (*si ensemble de sommet déjà vu ajoute juste la transition*)
+        else Hashtbl.add transitions i ((c,ind)::(Hashtbl.find transitions i))) accessible (*si ensemble de sommet déjà vu ajoute juste la transition*)
     done;
     let size = Hashtbl.length dico in
     let initial = Array.make size false in
     initial.(0) <- true;
+    let transition_auto = Array.init size (fun i -> Hashtbl.find transitions i) in
     let finaux = Array.init size (fun i -> 
                                     let value = ref false in (*la valeur que va prendre la case du tableau*)
                                     let ens = Hashtbl.find dico i in (*l'ensemble des sommets correspondant à cet indice*)
                                     Sets.iter (fun x -> value:=(est_terminal automate x)||(!value)) ens;(*on vérifie si un des états est terminal*)
                                     !value) in
-    creer_automate size transitions initial finaux;(*on renvoie l'automate deterministe*)
+    creer_automate size transition_auto initial finaux true;;(*on renvoie l'automate deterministe*)
+
+  let est_reconnu_deterministe string automate =
+      let initial = List.hd (etats_initiaux automate) in
+      let char_tab = String.fold_right (fun character acc -> character::acc) string [] in 
+      let rec parcours liste etat=
+        match liste  with
+        |[] -> automate.terminal.(etat)
+        |e::q -> let accessible=from_etat automate etat in  try 
+                                                              parcours q (Sets.choose (Hashtbl.find accessible e))
+                                                            with
+                                                            |_ -> false 
+      in parcours char_tab initial;;
+  
+  let afficher automate =
+    print_string "taille : ";print_int automate.nb_etats;print_string "\n";
+    print_string "transitions : ";Array.iteri (fun i x -> print_int i;print_string " :\n";List.iter (fun (c,j) -> print_string "(";print_char c;print_int j;print_string ");") x;print_string "\n" )automate.transition;print_string "\n";
+    print_string "initiaux : ";Array.iteri (fun i x -> if x then (print_int i;print_string ";")  ) automate.initial;print_string "\n";
+    print_string "taille : ";Array.iteri (fun i x -> if x then (print_int i;print_string ";" ) ) automate.terminal;print_string "\n"; 
 end

@@ -1,3 +1,6 @@
 
 *.cmi
 *.cmo
+Afnd
+test
+test.ml
