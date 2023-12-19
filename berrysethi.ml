@@ -1,4 +1,5 @@
 open Afnd
+
 type regex =
   |Option of regex
   |Lettre of int (*qui correspond à un char comme ça je peux lineariser avec des indices*)
@@ -26,6 +27,7 @@ let lireRegex str =
     | '?' -> Stack.push (Option (Stack.pop p)) p
     | a -> Stack.push (Lettre (Char.code a)) p (*le constructeur any est representé par la lettre '.'*)
   done;
+  assert (Stack.length p = 1);
   Stack.pop p;;
 
 (* regex -> regex * int list
@@ -37,7 +39,7 @@ let lineariser reg =
     |Lettre i -> begin
         compte := ((!compte) + 1);
         p := (i)::(!p);
-        Lettre !compte;
+        Lettre !compte;(*créé une nouvelle regex avec pour lettre des indices uniques (linéarisation)*)
       end
     |Option r -> Option (aux r)
     |Or (r1,r2) -> Or (aux r1, aux r2)
@@ -92,46 +94,35 @@ let facteurs reg =
   !facteurs;;
 
 (*(regex * (int list)) -> berry_automate*)
+(*cree un berry_automate representant la regex liéarisée donnée en parametre *)
 let partial_berrySethi (reg,associations) = (* prend en param une regex linéarisée et la liste des associations associée*)
-  let nb_etats = List.length associations in
-  let tabAssos = Array.of_list associations in
-  let derni = dernieres_lettres reg in
-  let prem = premieres_lettres reg in
-  let fact = facteurs reg in
+  let nb_etats = List.length associations +1 in
+  let tabAssos = Array.of_list associations in(*tableau permettant d'associer à chaque nouvelle lettre sa lettre originelle*)
+  let derni = dernieres_lettres reg in(*dernieres lettres possibles*)
+  let prem = premieres_lettres reg in(*premieres lettres possibles*)
+  let fact = facteurs reg in(*facteurs possibles*)
 
-  let term = Array.make (nb_etats +1) false in(*etats treminaux*)
+  let term = Array.make (nb_etats) false in(*representation pour les afnd des etats terminaux*)
   List.iter (fun a -> term.(a) <- true) derni;
 
-  let initi = Array.make (nb_etats +1) false in(*etats initiaux*)
-  initi.(nb_etats) <- true;
+  let initi = Array.make (nb_etats) false in(*representation pour les afnd des etats initiaux*)
+  initi.(nb_etats - 1) <- true;
 
-  let trans = Array.make (nb_etats +1) [] in (*transitions*)
+  let trans = Array.make (nb_etats) [] in (*representation pour les afnd des transitions*)
   List.iter (fun a -> trans.(fst a) <- (snd a,tabAssos.(snd a))::(trans.(fst a))) fact;
-  List.iter (fun a -> trans.(nb_etats) <- (a,tabAssos.(a))::(trans.(nb_etats))) prem;(*pour le noeud initial*)
-
-  (*let associate_int l = 
-    if List.fold_left (fun acc x -> acc || snd x = (Char.code '.')) false l then 
-      let p = ref [] in 
-      for i = 0 to (nb_etats - 1) do
-        p := (i,tabAssos.(i))::!p;
-      done;
-      !p
-    else
-      List.map (fun a -> a)l
-  in*)
+  List.iter (fun a -> trans.(nb_etats-1) <- (a,tabAssos.(a))::(trans.(nb_etats-1))) prem;(*pour le noeud initial*)
 
   let (auto : berry_automate) = {
     nb_etats = nb_etats;
-    transition = (*Array.map (associate_int)*) trans;
+    transition = trans;
     terminal = term;
     initial = initi;
   } in auto;;
 
 (* string -> automate*)
+(*renvoie l'automate associé à la string representant une regex passée en parametre
+  (il s'agit de l'application successive des fonctions précedentes puis de convertir le berry_automate en automate) *)
 let berrySethi str = 
   let int_auto = partial_berrySethi (lineariser (lireRegex str)) in (*un auto de berry sethi*)
   let transitions = (Array.map (List.map (fun a -> (Char.chr (snd a),fst a))) int_auto.transition) in
   Afnd.creer_automate int_auto.nb_etats transitions int_auto.initial int_auto.terminal false;
-
-
-  (*let a = berrySethi "..@" ;;*)
