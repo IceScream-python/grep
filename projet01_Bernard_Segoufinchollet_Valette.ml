@@ -3,18 +3,19 @@
 (* Nicolas Pécheux <info.cpge@cpge.info>                            *)
 (* http://cpge.info                                                 *)
 (*::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::*)
-
+open Afnd
 (* À modifier : ce que l'on fait pour chaque ligne. En l'état, on
    affiche toujours la ligne. *)
-let process_line line =
-  Printf.printf "%s\n%!" line
+let process_line line automate=
+  if Afnd.est_reconnu_deterministe line automate then Printf.printf "%s\n%!" line
+  else  Printf.printf "non %s\n%!" line
 
 (* Lecture de l'entrée, ligne par ligne *)
-let process input =
+let process input auto=
   try
     while true do
       let line = Stdlib.input_line input in
-      process_line line
+      process_line line auto
     done
   with End_of_file -> ()
 
@@ -39,7 +40,10 @@ let main () =
     "* Regexp you entered is '%s'\n* Reading from %s\n\n%!"
     Sys.argv.(1)
     (if argc = 3 then Sys.argv.(2) else "stdin");
-  process input;
+    let automate_deterministe = Afnd.determiniser (Berrysethi.berrySethi Sys.argv.(1)) in
+    Afnd.afficher automate_deterministe;
+  process input automate_deterministe;
   if argc = 3 then Stdlib.close_in input
+  
 
 let () = main ()

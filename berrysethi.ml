@@ -1,5 +1,4 @@
-
-
+open Afnd
 type regex =
   |Option of regex
   |Lettre of int (*qui correspond à un char comme ça je peux lineariser avec des indices*)
@@ -11,14 +10,6 @@ type regex =
 type berry_automate = {
   nb_etats : int;
   transition : (int*int) list array ;
-  terminal : bool array;
-  initial : bool array;
-}
-
-(*automate normal*)
-type automate = {
-  nb_etats : int;
-  transition : (int*char) list array ;
   terminal : bool array;
   initial : bool array;
 }
@@ -139,12 +130,8 @@ let partial_berrySethi (reg,associations) = (* prend en param une regex linéari
 (* string -> automate*)
 let berrySethi str = 
   let int_auto = partial_berrySethi (lineariser (lireRegex str)) in (*un auto de berry sethi*)
+  let transitions = (Array.map (List.map (fun a -> (Char.chr (snd a),fst a))) int_auto.transition) in
+  Afnd.creer_automate int_auto.nb_etats transitions int_auto.initial int_auto.terminal false;
 
-  let char_auto = {
-    nb_etats = int_auto.nb_etats;
-    transition = Array.map (List.map (fun a -> (fst a,Char.chr (snd a)))) int_auto.transition ;
-    terminal = int_auto.terminal;
-    initial = int_auto.initial;
-  } in char_auto;;
 
   (*let a = berrySethi "..@" ;;*)
