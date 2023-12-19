@@ -1,14 +1,10 @@
 
-(*::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::*)
-(* Nicolas Pécheux <info.cpge@cpge.info>                            *)
-(* http://cpge.info                                                 *)
+
 (*::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::*)
 open Afnd
-(* À modifier : ce que l'on fait pour chaque ligne. En l'état, on
-   affiche toujours la ligne. *)
+
 let process_line line automate=
-  if Afnd.est_reconnu_deterministe line automate then Printf.printf "%s\n%!" line
-  else  Printf.printf "non %s\n%!" line
+  if Afnd.est_reconnu_deterministe line automate then Printf.printf "%s\n%!" line (*si le mot est reconnu par l'automate l'affiche*)
 
 (* Lecture de l'entrée, ligne par ligne *)
 let process input auto=
@@ -21,7 +17,7 @@ let process input auto=
 
 let main () =
   (* Vérifie que l'expression régulière est bien présente en premier
-     argument. Sinon, on affiche un message indiquant comment utiliser
+    argument. Sinon, on affiche un message indiquant comment utiliser
      ce programme et on quitte avec un code d'erreur de `1`. *)
   let argc = Array.length Sys.argv in
   if argc < 2 || argc > 3 then begin
@@ -40,8 +36,7 @@ let main () =
     "* Regexp you entered is '%s'\n* Reading from %s\n\n%!"
     Sys.argv.(1)
     (if argc = 3 then Sys.argv.(2) else "stdin");
-    let automate_deterministe = Afnd.determiniser (Berrysethi.berrySethi Sys.argv.(1)) in
-    Afnd.afficher automate_deterministe;
+    let automate_deterministe = Afnd.determiniser (Berrysethi.berrySethi Sys.argv.(1)) in (*calcul de l'automate déterministe associé à la regexp passé en paramètre*)
   process input automate_deterministe;
   if argc = 3 then Stdlib.close_in input
   

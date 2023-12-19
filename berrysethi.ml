@@ -125,4 +125,4 @@ let partial_berrySethi (reg,associations) = (* prend en param une regex linéari
 let berrySethi str = 
   let int_auto = partial_berrySethi (lineariser (lireRegex str)) in (*un auto de berry sethi*)
   let transitions = (Array.map (List.map (fun a -> (Char.chr (snd a),fst a))) int_auto.transition) in
-  Afnd.creer_automate int_auto.nb_etats transitions int_auto.initial int_auto.terminal false;
+  Afnd.creer_automate int_auto.nb_etats transitions int_auto.initial int_auto.terminal false; 

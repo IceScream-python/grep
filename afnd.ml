@@ -75,10 +75,8 @@ module Afnd = struct
                                 else Hashtbl.add dic c (Sets.of_list [elm])) automate.transition.(i);dic;;
 
   let determiniser automate = 
-    afficher automate;
     let dico = Hashtbl.create (automate.nb_etats) in (*dictionnaires des nouveaux états*)
     let pile = Stack.create () in  (*pile des ensembles d'états qu'il reste à trouver*)
-    let vus = ref [[0]] in
     let transitions = Hashtbl.create automate.nb_etats in (*dictionnaire des transitions des nouveaux états*)
     let cpt = ref 0 in (*compteur du nombre d'etats*)
     let liste_of_set s = Sets.fold (fun x acc -> x::acc) s [] in (*transforme un ensemble en liste*)
@@ -88,11 +86,15 @@ module Afnd = struct
       |e::_ when e=elm -> ind
       |_::q -> indice_in_liste elm q (ind+1) 
     in
-    Hashtbl.add dico !cpt (Sets.of_list (etats_initiaux automate));Stack.push !cpt pile;cpt:=!cpt+1;(*Initialisation*)
+    (*let afficher_ensemble_etat liste = List.iter (fun x -> print_int x;print_string ";") liste in*) (*fonction de debuggage*)
+    let liste_depart = etats_initiaux automate in
+    Hashtbl.add dico !cpt (Sets.of_list  liste_depart);Stack.push !cpt pile;cpt:=!cpt+1;(*Initialisation*)
+    let vus = ref [liste_depart] in(*liste de marquage des sommets déjà vus*)
     while  not (Stack.is_empty pile) do (*tant qu'il reste des ensemble d'états à explorer*)
       let i = Stack.pop pile in 
       Hashtbl.add transitions i [];(*initialise les transitions partant de ce sommet*)
       let ensemble = liste_of_set (Hashtbl.find dico i) in (*ensemble des sommets composant l'etat*)
+      (*print_int i;print_string " : ";afficher_ensemble_etat ensemble;print_endline "";*) (*ligne servant à afficher les ensembles d'etats considérés pour le debuggage*)
       let dic_liste = List.map (from_etat automate) ensemble in (*liste des dictionnaire des sommets accessible depuis un sommet de l'etat*)
       let accessible = Hashtbl.create (automate.nb_etats) in (*dictionnaire qui a un char associe l'ensemble des sommets accessibles*)
       List.iter (fun x -> 
