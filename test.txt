@@ -6,3 +6,8 @@ abc
 cba
 aaabc
 bab
+aba
+bbb
+bababa
+bababab
+baaaaaab
