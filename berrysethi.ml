@@ -15,6 +15,14 @@ type berry_automate = {
   initial : bool array;
 }
 
+let pointToMEGAOr () = 
+  let a = ref (Lettre 0) in
+  for i = 1 to 255 do
+    a := (Or (Lettre i, !a));
+  done;
+  !a;;
+
+
 (*string -> regex*)
 let lireRegex str =
   let p = Stack.create () in
@@ -25,6 +33,7 @@ let lireRegex str =
     | '@' -> Stack.push (Concat (Stack.pop p, Stack.pop p)) p
     | '*' -> Stack.push (Kleene (Stack.pop p)) p
     | '?' -> Stack.push (Option (Stack.pop p)) p
+    | '.' -> Stack.push (pointToMEGAOr ()) p  (*cette implementation du '.' est EXTREMEMENT moche, on peut considerer qu'elle l'a pas été faite*)
     | a -> Stack.push (Lettre (Char.code a)) p (*le constructeur any est representé par la lettre '.'*)
   done;
   assert (Stack.length p = 1);
