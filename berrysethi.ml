@@ -51,7 +51,7 @@ let lineariser reg =
 
 (* regex -> bool 
    renvoie true si et seulement si le langage denoté contient epsilon*)
-let hasEpsilon reg =  match reg with
+let rec hasEpsilon reg =  match reg with
 |Lettre i -> false 
 |Option r -> true
 |Or (r1,r2) -> (hasEpsilon r1) || (hasEpsilon r2)
