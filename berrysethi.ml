@@ -48,6 +48,16 @@ let lineariser reg =
   in let l = aux reg in
   (l,List.rev !p);;
 
+
+(* regex -> bool 
+   renvoie true si et seulement si le langage denoté contient epsilon*)
+let hasEpsilon reg =  match reg with
+|Lettre i -> false 
+|Option r -> true
+|Or (r1,r2) -> (hasEpsilon r1) || (hasEpsilon r2)
+|Concat (r1,r2) -> (hasEpsilon r1) && (hasEpsilon r2)
+|Kleene r -> true
+
 (* regex -> int list
    renvoie les premieres lettres possibles pour une regex *)
 let premieres_lettres reg =
@@ -56,6 +66,7 @@ let premieres_lettres reg =
     |Lettre i -> possible := i::!possible 
     |Option r -> aux r
     |Or (r1,r2) -> (aux r1; aux r2;)
+    |Concat (r1,r2) when hasEpsilon r1 -> (aux r1; aux r2)
     |Concat (r1,r2) -> aux r1
     |Kleene r -> aux r
   in aux reg;
@@ -69,6 +80,7 @@ let dernieres_lettres reg =
     |Lettre i -> possible := i::!possible 
     |Option r -> aux r
     |Or (r1,r2) -> (aux r1; aux r2;)
+    |Concat (r1,r2) when hasEpsilon r2 -> (aux r1; aux r2;)
     |Concat (r1,r2) -> aux r2
     |Kleene r -> aux r
   in aux reg;
