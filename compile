@@ -1,1 +1,1 @@
-ocamlc -o mygrep afnd.ml berrysethi.ml projet01_Bernard_Segoufinchollet_Valette.ml
+ocamlc -o mygrep afnd.ml berrysethi.ml main.ml
